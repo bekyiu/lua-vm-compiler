@@ -54,7 +54,7 @@ type Prototype struct {
 	// 函数基本信息
 	Source          string // 函数来源
 	LineDefined     uint32 // 起始行号
-	LastLienDefined uint32 // 终止行号
+	LastLineDefined uint32 // 终止行号
 	NumParams       byte   // 固定参数个数
 	IsVararg        byte   // 是否是可变参数
 	MaxStackSize    byte   // 函数执行期间需要的寄存器个数

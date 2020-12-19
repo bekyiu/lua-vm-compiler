@@ -3,6 +3,7 @@ package binchunk
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 )
 
 type reader struct {
@@ -36,7 +37,7 @@ func (this *reader) readLuaInteger() int64 {
 }
 
 func (this *reader) readLuaNumber() float64 {
-	return float64(this.readUint64())
+	return math.Float64frombits(this.readUint64())
 }
 
 func (this *reader) readString() string {
@@ -91,8 +92,11 @@ func (this *reader) checkHeader() {
 	if this.readLuaInteger() != LUAC_INT {
 		panic("需要二进制chunk为小端字节序")
 	}
-	if this.readLuaNumber() != LUAC_NUM {
-		panic("需要二进制chunk浮点数遵守IEEE754规范")
+
+	luaNumber := this.readLuaNumber()
+	if luaNumber != LUAC_NUM {
+		msg := fmt.Sprintf("需要二进制chunk浮点数遵守IEEE754规范, %g\n", luaNumber)
+		panic(msg)
 	}
 }
 
@@ -110,7 +114,7 @@ func (this *reader) readProto(parentSource string) *Prototype {
 	return &Prototype{
 		Source:          source,
 		LineDefined:     this.readUint32(),
-		LastLienDefined: this.readUint32(),
+		LastLineDefined: this.readUint32(),
 		NumParams:       this.readByte(),
 		IsVararg:        this.readByte(),
 		MaxStackSize:    this.readByte(),
@@ -153,8 +157,7 @@ func (this *reader) readConstant() interface{} {
 		return this.readLuaNumber()
 	case TAG_INTEGER:
 		return this.readLuaInteger()
-	case TAG_SHORT_STR:
-	case TAG_LONG_STR:
+	case TAG_SHORT_STR, TAG_LONG_STR:
 		return this.readString()
 	default:
 		panic("未知的常量tag: " + fmt.Sprintf("0x%x", tag))
