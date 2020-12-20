@@ -60,8 +60,9 @@ func printOperands(ins vm.Instruction) {
 
 		fmt.Printf("%d", a)
 		if ins.BMode() != vm.OpArgN {
-			// 最高位是1, 常量表索引
+			// 第9位是1, 常量表索引
 			if b > 0xFF {
+				// b&0xff得到正数的索引
 				fmt.Printf(" %d", -1-(b&0xFF))
 			} else {
 				fmt.Printf(" %d", b)

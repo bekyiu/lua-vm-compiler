@@ -14,8 +14,8 @@ func (this Instruction) Opcode() int {
 // 从iABC模式的指令中提取参数
 func (this Instruction) ABC() (a, b, c int) {
 	a = int(this >> 6 & 0xFF)
-	b = int(this >> 14 & 0x1FF)
-	c = int(this >> 23 & 0x1FF)
+	c = int(this >> 14 & 0x1FF)
+	b = int(this >> 23 & 0x1FF)
 	return
 }
 
