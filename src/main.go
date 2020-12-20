@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"write_lua/src/binchunk"
+	"write_lua/src/vm"
 )
 
 func main() {
@@ -44,8 +45,50 @@ func printCode(f *binchunk.Prototype) {
 		if len(f.LineInfos) > 0 {
 			line = fmt.Sprintf("%d", f.LineInfos[pc])
 		}
-		// 序号, 行号, 16进制的指令
-		fmt.Printf("\t%d\t[%s]\t0x%08X\n", pc+1, line, code)
+		ins := vm.Instruction(code)
+		// 序号, 行号, 指令名
+		fmt.Printf("\t%d\t[%s]\t%s\t", pc+1, line, ins.OpName())
+		printOperands(ins)
+		fmt.Println()
+	}
+}
+
+func printOperands(ins vm.Instruction) {
+	switch ins.OpMode() {
+	case vm.IABC:
+		a, b, c := ins.ABC()
+
+		fmt.Printf("%d", a)
+		if ins.BMode() != vm.OpArgN {
+			// 最高位是1, 常量表索引
+			if b > 0xFF {
+				fmt.Printf(" %d", -1-(b&0xFF))
+			} else {
+				fmt.Printf(" %d", b)
+			}
+		}
+		if ins.CMode() != vm.OpArgN {
+			if c > 0xFF {
+				fmt.Printf(" %d", -1-(c&0xFF))
+			} else {
+				fmt.Printf(" %d", c)
+			}
+		}
+	case vm.IABx:
+		a, bx := ins.ABx()
+
+		fmt.Printf("%d", a)
+		if ins.BMode() == vm.OpArgK {
+			fmt.Printf(" %d", -1-bx)
+		} else if ins.BMode() == vm.OpArgU {
+			fmt.Printf(" %d", bx)
+		}
+	case vm.IAsBx:
+		a, sbx := ins.AsBx()
+		fmt.Printf("%d %d", a, sbx)
+	case vm.IAx:
+		ax := ins.Ax()
+		fmt.Printf("%d", -1-ax)
 	}
 }
 
