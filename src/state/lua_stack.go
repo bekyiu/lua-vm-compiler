@@ -70,3 +70,13 @@ func (this *luaStack) set(idx int, val luaValue) {
 	}
 	panic(fmt.Sprintf("无效的索引: %d, 不能设置值: %T\n", idx, val))
 }
+
+// 逆序from到to元素的顺序
+func (this *luaStack) reverse(from, to int) {
+	slots := this.slots
+	for from < to {
+		slots[from], slots[to] = slots[to], slots[from]
+		from++
+		to--
+	}
+}
