@@ -67,3 +67,19 @@ func (this *luaState) Remove(idx int) {
 	this.Rotate(idx, -1)
 	this.Pop(1)
 }
+
+// 设置栈顶 索引
+func (this *luaState) SetTop(idx int) {
+	newTop := this.stack.absIndex(idx)
+	if newTop < 0 {
+		panic("stack underflow!")
+	}
+	n := this.stack.top - newTop
+	if n > 0 {
+		this.Pop(n)
+	} else if n < 0 {
+		for i := 0; i > n; i-- {
+			this.stack.push(nil)
+		}
+	}
+}

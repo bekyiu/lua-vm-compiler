@@ -20,3 +20,15 @@ func typeOf(val luaValue) api.LuaType {
 		panic("todo, 未知的值类型")
 	}
 }
+
+// lua中, 只有false和nil表示假
+func convertToBoolean(val luaValue) bool {
+	switch x := val.(type) {
+	case nil:
+		return false
+	case bool:
+		return x
+	default:
+		return true
+	}
+}
