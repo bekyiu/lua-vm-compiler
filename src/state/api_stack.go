@@ -31,6 +31,7 @@ func (this *luaState) Copy(fromIdx, toIdx int) {
 
 // 把索引处的值复制一份到栈顶
 func (this *luaState) PushValue(idx int) {
+	idx = this.stack.absIndex(idx)
 	e := this.stack.get(idx)
 	this.stack.push(e)
 }
