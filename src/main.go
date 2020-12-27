@@ -2,43 +2,40 @@ package main
 
 import (
 	"fmt"
-	"write_lua/src/api"
+	. "write_lua/src/api"
 	"write_lua/src/state"
 )
 
 func main() {
 	ls := state.New()
+	ls.PushInteger(1)
+	ls.PushString("2.0")
+	ls.PushString("3.0")
+	ls.PushNumber(4.0)
+	printStack(ls)
 
-	ls.PushBoolean(true)
+	ls.Arith(LUA_OPADD)
 	printStack(ls)
-	ls.PushInteger(10)
+	ls.Arith(LUA_OPBNOT)
 	printStack(ls)
-	ls.PushNil()
+	ls.Len(2)
 	printStack(ls)
-	ls.PushString("hello")
+	ls.Concat(3)
 	printStack(ls)
-	ls.PushValue(-4)
-	printStack(ls)
-	ls.Replace(3)
-	printStack(ls)
-	ls.SetTop(6)
-	printStack(ls)
-	ls.Remove(-3)
-	printStack(ls)
-	ls.SetTop(-5)
+	ls.PushBoolean(ls.Compare(1, 2, LUA_OPEQ))
 	printStack(ls)
 }
 
-func printStack(ls api.LuaState) {
+func printStack(ls LuaState) {
 	top := ls.GetTop()
 	for i := 1; i <= top; i++ {
 		t := ls.Type(i)
 		switch t {
-		case api.LUA_TBOOLEAN:
+		case LUA_TBOOLEAN:
 			fmt.Printf("[%t]", ls.ToBoolean(i))
-		case api.LUA_TNUMBER:
+		case LUA_TNUMBER:
 			fmt.Printf("[%g]", ls.ToNumber(i))
-		case api.LUA_TSTRING:
+		case LUA_TSTRING:
 			fmt.Printf("[%q]", ls.ToString(i))
 		default: // other values
 			fmt.Printf("[%s]", ls.TypeName(t))

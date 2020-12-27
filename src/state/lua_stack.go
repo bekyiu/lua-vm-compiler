@@ -56,16 +56,18 @@ func (this *luaStack) isValid(idx int) bool {
 
 // 根据索引取值
 func (this *luaStack) get(idx int) luaValue {
-	if this.isValid(idx) {
-		return this.slots[idx-1]
+	absIdx := this.absIndex(idx)
+	if absIdx > 0 && absIdx <= this.top {
+		return this.slots[absIdx-1]
 	}
 	return nil
 }
 
 // 根据索引设置值
 func (this *luaStack) set(idx int, val luaValue) {
-	if this.isValid(idx) {
-		this.slots[idx-1] = val
+	absIdx := this.absIndex(idx)
+	if absIdx > 0 && absIdx <= this.top {
+		this.slots[absIdx-1] = val
 		return
 	}
 	panic(fmt.Sprintf("无效的索引: %d, 不能设置值: %T\n", idx, val))
