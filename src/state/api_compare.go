@@ -23,7 +23,7 @@ func (this *luaState) Compare(idx1, idx2 int, op CompareOp) bool {
 	}
 }
 
-// 小于操作经警队数字和字符串有意义
+// 小于操作经仅对数字和字符串有意义
 func _lt(a luaValue, b luaValue) bool {
 	switch x := a.(type) {
 	case string:

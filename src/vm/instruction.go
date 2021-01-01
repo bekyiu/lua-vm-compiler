@@ -1,5 +1,7 @@
 package vm
 
+import "write_lua/src/api"
+
 type Instruction uint32
 
 const MAXARG_Bx = (1 << 18) - 1   // 2^18 - 1
@@ -48,4 +50,13 @@ func (this Instruction) BMode() byte {
 }
 func (this Instruction) CMode() byte {
 	return opcodes[this.Opcode()].argCMode
+}
+
+func (this Instruction) Execute(vm api.LuaVM) {
+	action := opcodes[this.Opcode()].action
+	if action != nil {
+		action(this, vm)
+	} else {
+		panic(this.OpName())
+	}
 }
