@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	. "write_lua/src/api"
 	"write_lua/src/binchunk"
 	"write_lua/src/state"
@@ -9,21 +10,15 @@ import (
 )
 
 func main() {
-	arr := make([]int, 0, 0)
-	//arr[0] = 1
-	zz := append(arr, 10)
-	fmt.Println(zz)
-	fmt.Println(zz[0])
-	fmt.Println(cap(zz))
-	fmt.Println(len(zz))
-	//data, _ := ioutil.ReadFile("D:\\lua\\lua_code\\ch06\\luac.out")
-	//proto := binchunk.Undump(data)
-	//luaMain(proto)
+	data, _ := ioutil.ReadFile("D:\\lua\\lua_code\\ch07\\luac.out")
+	proto := binchunk.Undump(data)
+	luaMain(proto)
 }
 
 func luaMain(proto *binchunk.Prototype) {
 	nRegs := int(proto.MaxStackSize)
 	ls := state.New(nRegs+8, proto)
+	// 预留出寄存器的空间
 	ls.SetTop(nRegs)
 	for {
 		pc := ls.PC()
@@ -53,5 +48,5 @@ func printStack(ls LuaState) {
 			fmt.Printf("[%s]", ls.TypeName(t))
 		}
 	}
-	fmt.Println()
+	fmt.Printf("\t栈顶: %d\n", top)
 }
