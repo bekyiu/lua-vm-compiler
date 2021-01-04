@@ -3,8 +3,13 @@ package state
 import "fmt"
 
 type luaStack struct {
-	slots []luaValue // 存放值
-	top   int        // 栈顶, 指向最顶层数据的高一个位置
+	slots   []luaValue // 存放值
+	top     int        // 栈顶, 指向最顶层数据的高一个位置
+
+	prev    *luaStack  // 指向上一个调用帧
+	closure *closure   // 函数闭包
+	varargs []luaValue // 函数可变参数
+	pc      int
 }
 
 func newLuaStack(size int) *luaStack {

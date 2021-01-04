@@ -2,24 +2,24 @@ package state
 
 // 返回当前pc
 func (this *luaState) PC() int {
-	return this.pc
+	return this.stack.pc
 }
 
 // 修改pc
 func (this *luaState) AddPC(n int) {
-	this.pc += n
+	this.stack.pc += n
 }
 
 // 取指令
 func (this *luaState) Fetch() uint32 {
-	ins := this.proto.Codes[this.pc]
-	this.pc++
+	ins := this.stack.closure.proto.Codes[this.stack.pc]
+	this.stack.pc++
 	return ins
 }
 
 // 将常量表索引处的常量推入栈顶
 func (this *luaState) GetConst(idx int) {
-	c := this.proto.Constants[idx]
+	c := this.stack.closure.proto.Constants[idx]
 	this.stack.push(c)
 }
 
