@@ -3,8 +3,8 @@ package state
 import "fmt"
 
 type luaStack struct {
-	slots   []luaValue // 存放值
-	top     int        // 栈顶, 指向最顶层数据的高一个位置
+	slots []luaValue // 存放值
+	top   int        // 栈顶, 指向最顶层数据的高一个位置
 
 	prev    *luaStack  // 指向上一个调用帧
 	closure *closure   // 函数闭包
@@ -85,5 +85,28 @@ func (this *luaStack) reverse(from, to int) {
 		slots[from], slots[to] = slots[to], slots[from]
 		from++
 		to--
+	}
+}
+
+func (this *luaStack) popN(n int) []luaValue {
+	vals := make([]luaValue, n)
+	for i := n - 1; i >= 0; i-- {
+		vals[i] = this.pop()
+	}
+	return vals
+}
+
+// push n个值, 多退少补
+func (this *luaStack) pushN(vals []luaValue, n int) {
+	nVals := len(vals)
+	if n < 0 {
+		n = nVals
+	}
+	for i := 0; i < n; i++ {
+		if i < nVals {
+			this.push(vals[i])
+		} else {
+			this.push(nil)
+		}
 	}
 }

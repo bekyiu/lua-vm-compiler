@@ -34,3 +34,24 @@ func (this *luaState) GetRK(rk int) {
 		this.PushValue(rk + 1)
 	}
 }
+
+// 返回当前lua函数的寄存器数量
+func (this *luaState) RegisterCount() int {
+	return int(this.stack.closure.proto.MaxStackSize)
+}
+
+// 把传递给当前lua函数的变长参数推入栈顶 多退少补
+func (this *luaState) LoadVararg(n int) {
+	if n < 0 {
+		n = len(this.stack.varargs)
+	}
+	this.stack.check(n)
+	this.stack.pushN(this.stack.varargs, n)
+}
+
+// 把当前lua函数的子函数原型实例化为闭包推入栈顶
+func (this *luaState) LoadProto(idx int) {
+	proto := this.stack.closure.proto.Protos[idx]
+	c := newLuaClosure(proto)
+	this.stack.push(c)
+}
