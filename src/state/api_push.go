@@ -1,5 +1,7 @@
 package state
 
+import . "write_lua/src/api"
+
 func (this *luaState) PushNil() {
 	this.stack.push(nil)
 }
@@ -15,4 +17,8 @@ func (this *luaState) PushNumber(n float64) {
 }
 func (this *luaState) PushString(s string) {
 	this.stack.push(s)
+}
+// 把go函数转换为go闭包, 然后压栈
+func (this *luaState) PushGoFunction(f GoFunction) {
+	this.stack.push(newGoClosure(f))
 }

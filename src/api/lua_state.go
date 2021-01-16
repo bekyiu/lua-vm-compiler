@@ -4,6 +4,8 @@ type LuaType = int
 type ArithOp = int
 type CompareOp = int
 
+type GoFunction func(LuaState) int
+
 type LuaState interface {
 	/* basic stack manipulation */
 	GetTop() int
@@ -27,6 +29,7 @@ type LuaState interface {
 	IsInteger(idx int) bool
 	IsNumber(idx int) bool
 	IsString(idx int) bool
+	IsGoFunction(idx int) bool
 	//IsTable(idx int) bool
 	//IsThread(idx int) bool
 	//IsFunction(idx int) bool
@@ -37,12 +40,14 @@ type LuaState interface {
 	ToNumberX(idx int) (float64, bool)
 	ToString(idx int) string
 	ToStringX(idx int) (string, bool)
+	ToGoFunction(idx int) GoFunction
 	/* push functions (Go -> stack) */
 	PushNil()
 	PushBoolean(b bool)
 	PushInteger(n int64)
 	PushNumber(n float64)
 	PushString(s string)
+	PushGoFunction(f GoFunction)
 	/* Comparison and arithmetic functions */
 	Arith(op ArithOp)
 	Compare(idx1, idx2 int, op CompareOp) bool

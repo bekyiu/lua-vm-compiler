@@ -109,3 +109,21 @@ func (this *luaState) ToString(idx int) string {
 	s, _ := this.ToStringX(idx)
 	return s
 }
+
+// 判断索引处的值是否为go函数
+func (this *luaState) IsGoFunction(idx int) bool {
+	val := this.stack.get(idx)
+	if c, ok := val.(*closure); ok {
+		return c.goFunc != nil
+	}
+	return false
+}
+
+// 取出索引处的值, 转换为go函数返回
+func (this *luaState) ToGoFunction(idx int) GoFunction {
+	val := this.stack.get(idx)
+	if c, ok := val.(*closure); ok {
+		return c.goFunc
+	}
+	return nil
+}

@@ -1,7 +1,6 @@
 package state
 
 import (
-	"fmt"
 	"write_lua/src/binchunk"
 	"write_lua/src/vm"
 )
@@ -22,9 +21,11 @@ func (this *luaState) Load(chunk []byte, chunkName, mode string) int {
 func (this *luaState) Call(nArgs, nResults int) {
 	val := this.stack.get(-(nArgs + 1))
 	if c, ok := val.(*closure); ok {
-		fmt.Printf("call %s<%d, %d>\n", c.proto.Source,
-			c.proto.LineDefined, c.proto.LastLineDefined)
-		this.callLuaClosure(nArgs, nResults, c)
+		if c.proto != nil {
+			this.callLuaClosure(nArgs, nResults, c)
+		} else {
+			this.callGoClosure(nArgs, nResults, c)
+		}
 	} else {
 		panic("not function")
 	}
@@ -68,4 +69,26 @@ func (this *luaState) runLuaClosure() {
 			break
 		}
 	}
+}
+
+func (this *luaState) callGoClosure(nArgs int, nResults int, c *closure) {
+	newStack := newLuaStack(nArgs + 20)
+	newStack.closure = c
+	// 给go闭包传递的参数
+	args := this.stack.popN(nArgs)
+	newStack.pushN(args, nArgs)
+	// go闭包
+	this.stack.pop()
+
+	this.pushLuaStack(newStack)
+	r := c.goFunc(this)
+	// go函数执行结束后, 把需要的返回值存在栈顶, 返回r表示返回值的个数
+	this.popLuaStack()
+
+	if nResults != 0 {
+		results := newStack.popN(r)
+		this.stack.check(len(results))
+		this.stack.pushN(results, nResults)
+	}
+
 }
