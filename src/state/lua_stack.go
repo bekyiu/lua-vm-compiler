@@ -7,9 +7,9 @@ type luaStack struct {
 	top   int        // 栈顶, 指向最顶层数据的高一个位置
 
 	prev    *luaStack  // 指向上一个调用帧
-	closure *closure   // 函数闭包
+	closure *closure   // 该调用帧所对应的函数
 	varargs []luaValue // 函数可变参数
-	pc      int
+	pc      int        // 当前函数Codes的索引
 }
 
 func newLuaStack(size int) *luaStack {

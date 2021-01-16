@@ -4,34 +4,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	. "write_lua/src/api"
-	"write_lua/src/binchunk"
 	"write_lua/src/state"
-	"write_lua/src/vm"
 )
 
 func main() {
-	data, _ := ioutil.ReadFile("D:\\lua\\lua_code\\ch07\\luac.out")
-	proto := binchunk.Undump(data)
-	luaMain(proto)
+	data, _ := ioutil.ReadFile("D:\\lua\\lua_code\\ch08\\luac.out")
+	//proto := binchunk.Undump(data)
+	//luaMain(proto)
+	ls := state.New()
+	ls.Load(data, "luac.out", "b")
+	ls.Call(0, 0)
 }
 
-func luaMain(proto *binchunk.Prototype) {
-	nRegs := int(proto.MaxStackSize)
-	ls := state.New(nRegs+8, proto)
-	// 预留出寄存器的空间
-	ls.SetTop(nRegs)
-	for {
-		pc := ls.PC()
-		ins := vm.Instruction(ls.Fetch())
-		if ins.Opcode() != vm.OP_RETURN {
-			ins.Execute(ls)
-			fmt.Printf("[%02d] %s ", pc+1, ins.OpName())
-			printStack(ls)
-		} else {
-			break
-		}
-	}
-}
+
 
 func printStack(ls LuaState) {
 	top := ls.GetTop()

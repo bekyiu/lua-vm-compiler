@@ -46,10 +46,30 @@ func setList(ins Instruction, vm LuaVM) {
 		// 获取批次数
 		c = Instruction(vm.Fetch()).Ax()
 	}
+
+	// t = {1, 2, f()}
+	bIsZero := b == 0
+	// 说明栈顶留有返回值
+	if bIsZero {
+		b = int(vm.ToInteger(-1)) - a - 1
+		vm.Pop(1)
+	}
+	vm.CheckStack(1)
 	// 数组起始索引
 	idx := int64(c * LFIELDS_PRE_FLUSH)
 	for i := 1; i <= b; i++ {
+		idx++
 		vm.PushValue(a + i)
-		vm.SetI(a, idx+int64(i))
+		vm.SetI(a, idx)
+	}
+	// 处理栈顶的值
+	if bIsZero {
+		for i := vm.RegisterCount() + 1; i <= vm.GetTop() ; i++ {
+			idx++
+			vm.PushValue(i)
+			vm.SetI(a, idx)
+		}
+		// 清空栈
+		vm.SetTop(vm.RegisterCount())
 	}
 }

@@ -86,3 +86,40 @@ func _return(ins Instruction, vm LuaVM) {
 		_fixStack(a, vm)
 	}
 }
+
+// R(A), R(A+1), ..., R(A+B-2) = vararg
+func vararg(ins Instruction, vm LuaVM) {
+	a, b, _ := ins.ABC()
+	a += 1
+
+	// b > 1 or b == 0
+	// 把b - 1个vararg复制到寄存器, 或是把所有vararg复制到寄存器
+	if b != 1 {
+		vm.LoadVararg(b - 1)
+		_popResults(a, b, vm)
+	}
+}
+
+// return R(A)(R(A+1), ... ,R(A+B-1))
+func tailCall(ins Instruction, vm LuaVM) {
+	a, b, _ := ins.ABC()
+	a += 1
+	nArgs := _pushFuncAndArgs(a, b, vm)
+	// 返回所有值
+	vm.Call(nArgs, -1)
+	_popResults(a, 0, vm)
+}
+
+// 把对象和方法拷贝到两个相邻的目标寄存器中
+// R(A+1) := R(B); R(A) := R(B)[RK(C)]
+func self(ins Instruction, vm LuaVM) {
+	a, b, c := ins.ABC()
+	a += 1
+	b += 1
+	// 对象
+	vm.Copy(b, a + 1)
+	// 方法
+	vm.GetRK(c)
+	vm.GetTable(b)
+	vm.Replace(a)
+}
