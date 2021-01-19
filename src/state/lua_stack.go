@@ -1,6 +1,9 @@
 package state
 
-import "fmt"
+import (
+	"fmt"
+	. "write_lua/src/api"
+)
 
 type luaStack struct {
 	slots []luaValue // 存放值
@@ -10,12 +13,14 @@ type luaStack struct {
 	closure *closure   // 该调用帧所对应的函数
 	varargs []luaValue // 函数可变参数
 	pc      int        // 当前函数Codes的索引
+	state   *luaState  //
 }
 
-func newLuaStack(size int) *luaStack {
+func newLuaStack(size int, state *luaState) *luaStack {
 	return &luaStack{
 		slots: make([]luaValue, size),
 		top:   0,
+		state: state,
 	}
 }
 
@@ -47,6 +52,10 @@ func (this *luaStack) pop() luaValue {
 
 // 索引转换为绝对索引
 func (this *luaStack) absIndex(idx int) int {
+	// 说明是伪索引
+	if idx <= LUA_REGISTRYINDEX {
+		return idx
+	}
 	if idx >= 0 {
 		return idx
 	}
@@ -55,12 +64,18 @@ func (this *luaStack) absIndex(idx int) int {
 
 // 判断索引是否有效, 栈的索引是从1/-1开始
 func (this *luaStack) isValid(idx int) bool {
+	if idx == LUA_REGISTRYINDEX {
+		return true
+	}
 	absIdx := this.absIndex(idx)
 	return absIdx > 0 && absIdx <= this.top
 }
 
 // 根据索引取值
 func (this *luaStack) get(idx int) luaValue {
+	if idx == LUA_REGISTRYINDEX {
+		return this.state.registry
+	}
 	absIdx := this.absIndex(idx)
 	if absIdx > 0 && absIdx <= this.top {
 		return this.slots[absIdx-1]
@@ -70,6 +85,10 @@ func (this *luaStack) get(idx int) luaValue {
 
 // 根据索引设置值
 func (this *luaStack) set(idx int, val luaValue) {
+	if idx == LUA_REGISTRYINDEX {
+		this.state.registry = val.(*luaTable)
+		return
+	}
 	absIdx := this.absIndex(idx)
 	if absIdx > 0 && absIdx <= this.top {
 		this.slots[absIdx-1] = val

@@ -38,3 +38,8 @@ const (
 	LUA_OPLT        // <
 	LUA_OPLE        // <=
 )
+
+const LUA_MINSTACK = 20                         // lua栈初始大小
+const LUAI_MAXSTACK = 1000000                   // lua栈的最大索引
+const LUA_REGISTRYINDEX = -LUAI_MAXSTACK - 1000 // 注册表的伪索引
+const LUA_RIDX_GLOBALS int64 = 20               // 全局环境在注册表的索引
