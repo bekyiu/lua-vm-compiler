@@ -38,3 +38,9 @@ func (this *luaState) GetI(idx int, i int64) LuaType {
 	t := this.stack.get(idx)
 	return this.getTable(t, i)
 }
+
+// 把全局变量中的指定字段压入栈顶
+func (this *luaState) GetGlobal(name string) LuaType {
+	t := this.registry.get(LUA_RIDX_GLOBALS)
+	return this.getTable(t, name)
+}

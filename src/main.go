@@ -8,14 +8,35 @@ import (
 )
 
 func main() {
-	data, _ := ioutil.ReadFile("D:\\lua\\lua_code\\ch08\\luac.out")
+	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch09/luac.out")
 	//proto := binchunk.Undump(data)
 	//luaMain(proto)
 	ls := state.New()
+	ls.Register("print", luaPrint)
 	ls.Load(data, "luac.out", "b")
 	ls.Call(0, 0)
 }
 
+
+// go函数实现lua中的print
+func luaPrint(ls LuaState) int {
+	// lua给go传递的参数个数
+	nArgs := ls.GetTop()
+	for i := 1; i <= nArgs ; i++ {
+		if ls.IsBoolean(i) {
+			fmt.Printf("%t", ls.ToBoolean(i))
+		} else if ls.IsString(i) {
+			fmt.Print(ls.ToString(i))
+		} else {
+			fmt.Print(ls.TypeName(ls.Type(i)))
+		}
+		if i < nArgs {
+			fmt.Print("\t")
+		}
+	}
+	fmt.Println()
+	return 0
+}
 
 
 func printStack(ls LuaState) {

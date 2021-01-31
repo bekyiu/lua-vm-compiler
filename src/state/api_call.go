@@ -1,6 +1,7 @@
 package state
 
 import (
+	. "write_lua/src/api"
 	"write_lua/src/binchunk"
 	"write_lua/src/vm"
 )
@@ -36,7 +37,7 @@ func (this *luaState) callLuaClosure(nArgs int, nResults int, c *closure) {
 	nParams := int(c.proto.NumParams)
 	isVararg := c.proto.IsVararg == 1
 	// 创建调用帧
-	newStack := newLuaStack(nRegs + 20)
+	newStack := newLuaStack(nRegs + LUA_MINSTACK, this)
 	newStack.closure = c
 
 	funcAndArgs := this.stack.popN(nArgs + 1)
@@ -72,7 +73,7 @@ func (this *luaState) runLuaClosure() {
 }
 
 func (this *luaState) callGoClosure(nArgs int, nResults int, c *closure) {
-	newStack := newLuaStack(nArgs + 20)
+	newStack := newLuaStack(nArgs + LUA_MINSTACK, this)
 	newStack.closure = c
 	// 给go闭包传递的参数
 	args := this.stack.popN(nArgs)

@@ -22,3 +22,8 @@ func (this *luaState) PushString(s string) {
 func (this *luaState) PushGoFunction(f GoFunction) {
 	this.stack.push(newGoClosure(f))
 }
+// 把全局环境压栈
+func (this *luaState) PushGlobalTable() {
+	global := this.registry.get(LUA_RIDX_GLOBALS)
+	this.stack.push(global)
+}

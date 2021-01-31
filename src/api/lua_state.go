@@ -48,6 +48,7 @@ type LuaState interface {
 	PushNumber(n float64)
 	PushString(s string)
 	PushGoFunction(f GoFunction)
+	PushGlobalTable()
 	/* Comparison and arithmetic functions */
 	Arith(op ArithOp)
 	Compare(idx1, idx2 int, op CompareOp) bool
@@ -60,11 +61,15 @@ type LuaState interface {
 	GetTable(idx int) LuaType
 	GetField(idx int, k string) LuaType
 	GetI(idx int, i int64) LuaType
+	GetGlobal(name string) LuaType
 	/* set functions (stack -> Lua) */
 	SetTable(idx int)
 	SetField(idx int, k string)
 	SetI(idx int, i int64)
+	SetGlobal(name string)
+	Register(name string, f GoFunction)
 	/* 'load' and 'call' functions (load and run Lua code) */
 	Load(chunk []byte, chunkName, mode string) int
 	Call(nArgs, nResults int)
+
 }
