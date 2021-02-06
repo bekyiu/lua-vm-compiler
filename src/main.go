@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch09/luac.out")
+	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch10/luac.out")
 	//proto := binchunk.Undump(data)
 	//luaMain(proto)
 	ls := state.New()

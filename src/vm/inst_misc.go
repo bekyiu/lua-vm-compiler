@@ -13,6 +13,7 @@ func jmp(ins Instruction, vm LuaVM) {
 	a, sbx := ins.AsBx()
 	vm.AddPC(sbx)
 	if a != 0 {
-		panic("todo...")
+		// 闭合处于开启状态的upvalue
+		vm.CloseUpvalues(a)
 	}
 }

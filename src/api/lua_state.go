@@ -6,6 +6,11 @@ type CompareOp = int
 
 type GoFunction func(LuaState) int
 
+// upvalue索引, 从1开始; 返回upvalue伪索引
+func LuaUpvalueIndex(i int) int {
+	return LUA_REGISTRYINDEX - i
+}
+
 type LuaState interface {
 	/* basic stack manipulation */
 	GetTop() int
@@ -48,6 +53,7 @@ type LuaState interface {
 	PushNumber(n float64)
 	PushString(s string)
 	PushGoFunction(f GoFunction)
+	PushGoClosure(f GoFunction, n int)
 	PushGlobalTable()
 	/* Comparison and arithmetic functions */
 	Arith(op ArithOp)

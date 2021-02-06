@@ -9,11 +9,12 @@ type luaStack struct {
 	slots []luaValue // 存放值
 	top   int        // 栈顶, 指向最顶层数据的高一个位置
 
-	prev    *luaStack  // 指向上一个调用帧
-	closure *closure   // 该调用帧所对应的函数
-	varargs []luaValue // 函数可变参数
-	pc      int        // 当前函数Codes的索引
-	state   *luaState  //
+	prev    *luaStack        // 指向上一个调用帧
+	closure *closure         // 该调用帧所对应的函数
+	varargs []luaValue       // 函数可变参数
+	pc      int              // 当前函数Codes的索引
+	state   *luaState        //
+	openuvs map[int]*upvalue // 存放子闭包捕获当前闭包的局部变量, key是局部变量的寄存器索引
 }
 
 func newLuaStack(size int, state *luaState) *luaStack {
@@ -53,10 +54,7 @@ func (this *luaStack) pop() luaValue {
 // 索引转换为绝对索引
 func (this *luaStack) absIndex(idx int) int {
 	// 说明是伪索引
-	if idx <= LUA_REGISTRYINDEX {
-		return idx
-	}
-	if idx >= 0 {
+	if idx >= 0 || idx <= LUA_REGISTRYINDEX {
 		return idx
 	}
 	return idx + this.top + 1
@@ -64,6 +62,14 @@ func (this *luaStack) absIndex(idx int) int {
 
 // 判断索引是否有效, 栈的索引是从1/-1开始
 func (this *luaStack) isValid(idx int) bool {
+	// upvalue伪索引
+	if idx < LUA_REGISTRYINDEX {
+		// 从伪索引转换为真实索引, 从0开始
+		uvIdx := LUA_REGISTRYINDEX - idx - 1
+		c := this.closure
+		return c != nil && uvIdx < len(c.upvals)
+	}
+	// 注册表伪索引
 	if idx == LUA_REGISTRYINDEX {
 		return true
 	}
@@ -73,6 +79,14 @@ func (this *luaStack) isValid(idx int) bool {
 
 // 根据索引取值
 func (this *luaStack) get(idx int) luaValue {
+	if idx < LUA_REGISTRYINDEX {
+		uvIdx := LUA_REGISTRYINDEX - idx - 1
+		c := this.closure
+		if c == nil || uvIdx >= len(c.upvals) {
+			return nil
+		}
+		return *(c.upvals[uvIdx].val)
+	}
 	if idx == LUA_REGISTRYINDEX {
 		return this.state.registry
 	}
@@ -85,6 +99,14 @@ func (this *luaStack) get(idx int) luaValue {
 
 // 根据索引设置值
 func (this *luaStack) set(idx int, val luaValue) {
+	if idx < LUA_REGISTRYINDEX {
+		uvIdx := LUA_REGISTRYINDEX - idx - 1
+		c := this.closure
+		if c != nil && uvIdx < len(c.upvals) {
+			*(c.upvals[uvIdx].val) = val
+		}
+		return
+	}
 	if idx == LUA_REGISTRYINDEX {
 		this.state.registry = val.(*luaTable)
 		return

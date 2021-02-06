@@ -77,7 +77,7 @@ func _return(ins Instruction, vm LuaVM) {
 		// 无返回
 	} else if b > 1 {
 		vm.CheckStack(b - 1)
-		for i := a; i < a+b-2; i++ {
+		for i := a; i <= a+b-2; i++ {
 			vm.PushValue(i)
 		}
 	} else {

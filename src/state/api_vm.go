@@ -51,7 +51,44 @@ func (this *luaState) LoadVararg(n int) {
 
 // 把当前lua函数的子函数原型实例化为闭包推入栈顶
 func (this *luaState) LoadProto(idx int) {
-	proto := this.stack.closure.proto.Protos[idx]
-	c := newLuaClosure(proto)
-	this.stack.push(c)
+	curStack := this.stack
+	curClosure := curStack.closure
+	subProto := curClosure.proto.Protos[idx]
+	subClosure := newLuaClosure(subProto)
+	curStack.push(subClosure)
+
+	// 根据函数原型的Upvalue表来初始化子闭包的upvalue
+	for i, uvInfo := range subProto.Upvalues {
+
+		uvIdx := int(uvInfo.Idx)
+		// 等于1说明子闭包的upvalue是直接捕获的当前闭包的局部变量
+		if uvInfo.Instack == 1 {
+			if curStack.openuvs == nil {
+				curStack.openuvs = map[int]*upvalue{}
+			}
+			if openuv, found := curStack.openuvs[uvIdx]; found {
+				subClosure.upvals[i] = openuv
+			} else {
+				// 此时子闭包upvalue项对应的uvIdx是 当前闭包中被捕获的局部变量在寄存器中的索引
+				subClosure.upvals[i] = &upvalue{&curStack.slots[uvIdx]}
+				curStack.openuvs[uvIdx] = subClosure.upvals[i]
+			}
+		} else {
+			// 等于0，说明是来源于更外围函数的局部变量，存在于当前闭包的upvalue表中
+			// 此时子闭包upvalue项对应的uvIdx是 该upvalue项在当前闭包upvalue表的索引
+			subClosure.upvals[i] = curClosure.upvals[uvIdx]
+		}
+	}
+}
+
+func (this *luaState) CloseUpvalues(a int) {
+	for i, openuv := range this.stack.openuvs {
+		if i >= a - 1 {
+			// val是个新的变量, 地址是不一样的
+			val := *(openuv.val)
+			// 不在指向栈中的局部变量
+			openuv.val = &val
+			delete(this.stack.openuvs, i)
+		}
+	}
 }

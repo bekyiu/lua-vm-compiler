@@ -13,6 +13,12 @@ func (this *luaState) Load(chunk []byte, chunkName, mode string) int {
 	proto := binchunk.Undump(chunk)
 	c := newLuaClosure(proto)
 	this.stack.push(c)
+	// 初始化upvalue
+	if len(proto.Upvalues) > 0 {
+		env := this.registry.get(LUA_RIDX_GLOBALS)
+		// 默认第一个upvalue就是全局环境
+		c.upvals[0] = &upvalue{&env}
+	}
 	// 0表示加载成功
 	return 0
 }

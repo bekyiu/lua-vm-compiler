@@ -1,15 +1,44 @@
 package vm
 
-import . "write_lua/src/api"
+import (
+	. "write_lua/src/api"
+)
 
-// 把某个全局变量放入指定寄存器
-func getTabUp(ins Instruction, vm LuaVM) {
-	a, _, c := ins.ABC()
+// 把当前闭包的某个upvalue值拷贝到目标寄存器中
+// R(A) := Upvalue[B]
+func getUpval(ins Instruction, vm LuaVM) {
+	a, b, _ := ins.ABC()
 	a += 1
+	b += 1
+	vm.Copy(LuaUpvalueIndex(b), a)
+}
 
-	vm.PushGlobalTable()
+// 使用寄存器中的值给当前闭包的upvalue赋值
+// Upvalue[B] := R(A)
+func setUpval(ins Instruction, vm LuaVM) {
+	a, b, _ := ins.ABC()
+	a += 1
+	b += 1
+	vm.Copy(a, LuaUpvalueIndex(b))
+}
+
+// 如果当前闭包的某个upvalue是表, 则根据键从该表里取值
+// R(A) := Upvalue[B][RK(C)]
+func getTabUp(ins Instruction, vm LuaVM) {
+	a, b, c := ins.ABC()
+	a += 1
+	b += 1
 	vm.GetRK(c)
-	vm.GetTable(-2)
+	vm.GetTable(LuaUpvalueIndex(b))
 	vm.Replace(a)
-	vm.Pop(1)
+}
+
+// 如果当前闭包的某个upvalue是表, 则根据键往表里写值
+// Upvalue[A][RK(B)] := RK(C)
+func setTabUp(ins Instruction, vm LuaVM) {
+	a, b, c := ins.ABC()
+	a += 1
+	vm.GetRK(b)
+	vm.GetRK(c)
+	vm.SetTable(LuaUpvalueIndex(a))
 }
