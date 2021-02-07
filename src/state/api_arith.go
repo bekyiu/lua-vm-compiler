@@ -32,25 +32,26 @@ var (
 )
 
 type operator struct {
+	metamethod string
 	integerFunc func(int64, int64) int64
 	floatFunc   func(float64, float64) float64
 }
 
 var operators = []operator{
-	operator{iadd, fadd},
-	operator{isub, fsub},
-	operator{imul, fmul},
-	operator{imod, fmod},
-	operator{nil, pow},
-	operator{nil, div},
-	operator{iidiv, fidiv},
-	operator{band, nil},
-	operator{bor, nil},
-	operator{bxor, nil},
-	operator{shl, nil},
-	operator{shr, nil},
-	operator{iunm, funm},
-	operator{bnot, nil},
+	operator{"__add", iadd, fadd},
+	operator{"__sub", isub, fsub},
+	operator{"__mul", imul, fmul},
+	operator{"__mod", imod, fmod},
+	operator{"__pow", nil, pow},
+	operator{"__div", nil, div},
+	operator{"__idiv", iidiv, fidiv},
+	operator{"__band", band, nil},
+	operator{"__bor", bor, nil},
+	operator{"__bxor", bxor, nil},
+	operator{"__shl", shl, nil},
+	operator{"__shr", shr, nil},
+	operator{"__unm", iunm, funm},
+	operator{"__bnot", bnot, nil},
 }
 
 // 基于栈执行算术和按位运算
@@ -66,10 +67,16 @@ func (this *luaState) Arith(op ArithOp) {
 	operator := operators[op]
 	if result := _arith(a, b, operator); result != nil {
 		this.stack.push(result)
-	} else {
-		panic(fmt.Sprintf("算术运算或位运算发生错误, 操作数a: %v, b: %v, 操作符op: %v\n",
-			a, b, operator))
+		return
 	}
+	// 执行元方法
+	mm := operator.metamethod
+	if result, ok := callMetamethod(a, b, mm, this); ok {
+		this.stack.push(result)
+		return
+	}
+	panic(fmt.Sprintf("算术运算或位运算发生错误, 操作数a: %v, b: %v, 操作符op: %v\n",
+		a, b, operator))
 }
 
 func _arith(a, b luaValue, op operator) luaValue {

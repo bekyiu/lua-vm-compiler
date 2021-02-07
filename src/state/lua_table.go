@@ -11,6 +11,8 @@ type luaTable struct {
 	arr []luaValue
 	// 当表被作为map使用时, 存放在_map中
 	_map map[luaValue]luaValue
+	// 与当前表关联的元表
+	metatable *luaTable
 }
 
 func newLuaTable(nArr, nRec int) *luaTable {
