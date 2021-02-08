@@ -111,3 +111,9 @@ func (this *luaTable) _expandArray() {
 func (this *luaTable) len() int {
 	return len(this.arr)
 }
+
+// 是否有指定元方法
+func (this *luaTable) hasMetafield(fieldName string) bool {
+	return this.metatable != nil &&
+		this.metatable.get(fieldName) != nil
+}

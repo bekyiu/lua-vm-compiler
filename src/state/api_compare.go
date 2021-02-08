@@ -13,18 +13,18 @@ func (this *luaState) Compare(idx1, idx2 int, op CompareOp) bool {
 
 	switch op {
 	case LUA_OPEQ:
-		return _eq(a, b)
+		return _eq(a, b, this)
 	case LUA_OPLT:
-		return _lt(a, b)
+		return _lt(a, b, this)
 	case LUA_OPLE:
-		return _le(a, b)
+		return _le(a, b, this)
 	default:
 		panic(fmt.Sprintf("未知的运算符: %v", op))
 	}
 }
 
 // 小于操作经仅对数字和字符串有意义
-func _lt(a luaValue, b luaValue) bool {
+func _lt(a luaValue, b luaValue, ls *luaState) bool {
 	switch x := a.(type) {
 	case string:
 		if y, ok := b.(string); ok {
@@ -45,10 +45,14 @@ func _lt(a luaValue, b luaValue) bool {
 			return x < y
 		}
 	}
-	panic("todo _lt...")
+	if result, ok := callMetamethod(a, b, "__lt", ls); ok {
+		return convertToBoolean(result)
+	} else {
+		panic("_lt error!")
+	}
 }
 
-func _le(a luaValue, b luaValue) bool {
+func _le(a luaValue, b luaValue, ls *luaState) bool {
 	switch x := a.(type) {
 	case string:
 		if y, ok := b.(string); ok {
@@ -69,10 +73,16 @@ func _le(a luaValue, b luaValue) bool {
 			return x <= y
 		}
 	}
-	panic("todo _le...")
+	if result, ok := callMetamethod(a, b, "__le", ls); ok {
+		return convertToBoolean(result)
+	} else if result, ok := callMetamethod(b, a, "__lt", ls); ok {
+		return !convertToBoolean(result)
+	} else {
+		panic("_le error!")
+	}
 }
 // 只有两个操作数在lua语言层面具有相同类型时, 等于运算才有可能返回true
-func _eq(a luaValue, b luaValue) bool {
+func _eq(a luaValue, b luaValue, ls *luaState) bool {
 	switch x := a.(type) {
 	case nil:
 		return b == nil
@@ -100,6 +110,13 @@ func _eq(a luaValue, b luaValue) bool {
 		default:
 			return false
 		}
+	case *luaTable:
+		if y, ok := b.(*luaTable); ok && x != y && ls != nil {
+			if result, ok := callMetamethod(x, y, "__eq", ls); ok {
+				return convertToBoolean(result)
+			}
+		}
+		return a == b
 	default:
 		return a == b
 	}

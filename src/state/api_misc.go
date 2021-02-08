@@ -5,10 +5,12 @@ func (this *luaState) Len(idx int) {
 	val := this.stack.get(idx)
 	if s, ok := val.(string); ok {
 		this.stack.push(int64(len(s)))
+	} else if result, ok := callMetamethod(val, val, "__len", this); ok {
+		this.stack.push(result)
 	} else if t, ok := val.(*luaTable); ok {
 		this.stack.push(int64(t.len()))
 	} else {
-		panic("Len todo...")
+		panic("Len err")
 	}
 }
 
@@ -26,7 +28,14 @@ func (this *luaState) Concat(n int) {
 				this.stack.push(s1 + s2)
 				continue
 			}
-			panic("Concat todo...")
+			// 不是字符串/数字, 尝试调用元方法
+			b := this.stack.pop()
+			a := this.stack.pop()
+			if result, ok := callMetamethod(a, b, "__concat", this); ok {
+				this.stack.push(result)
+				continue
+			}
+			panic("Concat err")
 		}
 	}
 }
