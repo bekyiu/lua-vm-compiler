@@ -5,6 +5,16 @@ import (
 	. "write_lua/src/api"
 )
 
+func (this *luaState) RawEqual(idx1, idx2 int) bool {
+	if !this.stack.isValid(idx1) || !this.stack.isValid(idx2) {
+		return false
+	}
+
+	a := this.stack.get(idx1)
+	b := this.stack.get(idx2)
+	return _eq(a, b, nil)
+}
+
 // 比较索引处的两个值, 不改变栈的状态
 // stack[idx1] op stack[idx2]
 func (this *luaState) Compare(idx1, idx2 int, op CompareOp) bool {

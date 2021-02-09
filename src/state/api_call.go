@@ -27,14 +27,25 @@ func (this *luaState) Load(chunk []byte, chunkName, mode string) int {
 // 被调函数和他的参数都在栈顶
 func (this *luaState) Call(nArgs, nResults int) {
 	val := this.stack.get(-(nArgs + 1))
-	if c, ok := val.(*closure); ok {
+	c, ok := val.(*closure)
+	if !ok {
+		if mf := getMetafield(val, "__call", this); mf != nil {
+			// 注意这里会修改c和ok的值
+			if c, ok = mf.(*closure); ok {
+				this.stack.push(val)
+				this.Insert(-(nArgs + 2))
+				nArgs += 1
+			}
+		}
+	}
+	if ok {
 		if c.proto != nil {
 			this.callLuaClosure(nArgs, nResults, c)
 		} else {
 			this.callGoClosure(nArgs, nResults, c)
 		}
 	} else {
-		panic("not function")
+		panic("call error!")
 	}
 }
 
@@ -43,7 +54,7 @@ func (this *luaState) callLuaClosure(nArgs int, nResults int, c *closure) {
 	nParams := int(c.proto.NumParams)
 	isVararg := c.proto.IsVararg == 1
 	// 创建调用帧
-	newStack := newLuaStack(nRegs + LUA_MINSTACK, this)
+	newStack := newLuaStack(nRegs+LUA_MINSTACK, this)
 	newStack.closure = c
 
 	funcAndArgs := this.stack.popN(nArgs + 1)
@@ -79,7 +90,7 @@ func (this *luaState) runLuaClosure() {
 }
 
 func (this *luaState) callGoClosure(nArgs int, nResults int, c *closure) {
-	newStack := newLuaStack(nArgs + LUA_MINSTACK, this)
+	newStack := newLuaStack(nArgs+LUA_MINSTACK, this)
 	newStack.closure = c
 	// 给go闭包传递的参数
 	args := this.stack.popN(nArgs)

@@ -8,15 +8,32 @@ import (
 )
 
 func main() {
-	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch10/luac.out")
+	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch11/luac.out")
 	//proto := binchunk.Undump(data)
 	//luaMain(proto)
 	ls := state.New()
 	ls.Register("print", luaPrint)
+	ls.Register("getmetatable", getMetatable)
+	ls.Register("setmetatable", setMetatable)
 	ls.Load(data, "luac.out", "b")
 	ls.Call(0, 0)
 }
 
+func getMetatable(ls LuaState) int {
+	// 栈顶有一个参数, 想要被获取元表的值
+	if !ls.GetMetatable(1) {
+		ls.PushNil()
+	}
+	return 1
+}
+
+func setMetatable(ls LuaState) int {
+	// 栈顶两个参数
+	// 1: 被设置元表的值
+	// 2: 准备好的元表
+	ls.SetMetatable(1)
+	return 1
+}
 
 // go函数实现lua中的print
 func luaPrint(ls LuaState) int {
