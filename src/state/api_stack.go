@@ -69,6 +69,7 @@ func (this *luaState) Remove(idx int) {
 }
 
 // 设置栈顶 索引
+// idx = 2 则 top = 3
 func (this *luaState) SetTop(idx int) {
 	newTop := this.stack.absIndex(idx)
 	if newTop < 0 {

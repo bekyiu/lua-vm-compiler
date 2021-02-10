@@ -39,3 +39,18 @@ func (this *luaState) Concat(n int) {
 		}
 	}
 }
+
+// 弹出栈顶的键, 表由索引指定, 压入下一个键值对
+func (this *luaState) Next(idx int) bool {
+	val := this.stack.get(idx)
+	if t, ok := val.(*luaTable); ok {
+		key := this.stack.pop()
+		if nextKey := t.nextKey(key); nextKey != nil {
+			this.stack.push(nextKey)
+			this.stack.push(t.get(nextKey))
+			return true
+		}
+		return false
+	}
+	panic("Next error, 指定索引处不是表")
+}

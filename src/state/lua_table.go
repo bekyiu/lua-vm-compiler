@@ -13,6 +13,12 @@ type luaTable struct {
 	_map map[luaValue]luaValue
 	// 与当前表关联的元表
 	metatable *luaTable
+	// 用于键值遍历, 记录了当前键对应的下一个键
+	keys map[luaValue]luaValue
+	// table中最后一个key
+	lastKey luaValue
+	// table是否更新过
+	changed bool
 }
 
 func newLuaTable(nArr, nRec int) *luaTable {
@@ -54,6 +60,8 @@ func (this *luaTable) put(key, val luaValue) {
 	if f, ok := key.(float64); ok && math.IsNaN(f) {
 		panic("table index is NaN!")
 	}
+
+	this.changed = true
 	key = _floatToInteger(key)
 	// 存数组
 	if idx, ok := key.(int64); ok && idx >= 1 {
@@ -116,4 +124,38 @@ func (this *luaTable) len() int {
 func (this *luaTable) hasMetafield(fieldName string) bool {
 	return this.metatable != nil &&
 		this.metatable.get(fieldName) != nil
+}
+
+func (this *luaTable) initKeys() {
+	this.keys = make(map[luaValue]luaValue)
+	// 当前key
+	var key luaValue = nil
+	for i, v := range this.arr {
+		if v != nil {
+			// 当前key对应的下一个key
+			this.keys[key] = int64(i + 1)
+			key = int64(i + 1)
+		}
+	}
+	for k, v := range this._map{
+		if v != nil {
+			this.keys[key] = k
+			key = k
+		}
+	}
+	this.lastKey = key
+}
+
+// 给出当前key, 返回下一个key
+func (this *luaTable) nextKey(key luaValue) luaValue {
+	if this.keys == nil || (key == nil && this.changed) {
+		this.initKeys()
+		this.changed = false
+	}
+	nextKey := this.keys[key]
+	if nextKey == nil && key != nil && key != this.lastKey {
+		panic("invalid key to 'next'")
+	}
+
+	return nextKey
 }

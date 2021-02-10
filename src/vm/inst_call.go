@@ -117,9 +117,18 @@ func self(ins Instruction, vm LuaVM) {
 	a += 1
 	b += 1
 	// 对象
-	vm.Copy(b, a + 1)
+	vm.Copy(b, a+1)
 	// 方法
 	vm.GetRK(c)
 	vm.GetTable(b)
 	vm.Replace(a)
+}
+
+// R(A+3), ... , R(A+2+C) := R(A)(R(A+1), R(A+2))
+func tForCall(ins Instruction, vm LuaVM) {
+	a, _, c := ins.ABC()
+	a += 1
+	_pushFuncAndArgs(a, 3, vm)
+	vm.Call(2, c)
+	_popResults(a+3, c+1, vm)
 }

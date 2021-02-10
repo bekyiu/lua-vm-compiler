@@ -8,15 +8,58 @@ import (
 )
 
 func main() {
-	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch11/luac.out")
+	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch12/luac.out")
 	//proto := binchunk.Undump(data)
 	//luaMain(proto)
 	ls := state.New()
 	ls.Register("print", luaPrint)
 	ls.Register("getmetatable", getMetatable)
 	ls.Register("setmetatable", setMetatable)
+	ls.Register("next", next)
+	ls.Register("pairs", pairs)
+	ls.Register("ipairs", iPairs)
 	ls.Load(data, "luac.out", "b")
 	ls.Call(0, 0)
+}
+
+
+func pairs(ls LuaState) int {
+	// 迭代器
+	ls.PushGoFunction(next)
+	// 表
+	ls.PushValue(1)
+	// 初始key
+	ls.PushNil()
+	return 3
+}
+
+func iPairs(ls LuaState) int {
+	ls.PushGoFunction(_iPairsAux)
+	ls.PushValue(1)
+	ls.PushInteger(0)
+	return 3
+}
+
+// 返回下一组键值对
+func _iPairsAux(ls LuaState) int {
+	i := ls.ToInteger(2) + 1
+	ls.PushInteger(i)
+	if ls.GetI(1, i) == LUA_TNIL {
+		return 1
+	} else {
+		return 2
+	}
+}
+
+func next(ls LuaState) int {
+	// 确保栈顶有两个值, 第一个是表, 第二个是key
+	ls.SetTop(2)
+	if ls.Next(1) {
+		return 2
+	} else {
+		ls.PushNil()
+		return 1
+	}
 }
 
 func getMetatable(ls LuaState) int {

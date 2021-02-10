@@ -86,4 +86,6 @@ type LuaState interface {
 	Load(chunk []byte, chunkName, mode string) int
 	Call(nArgs, nResults int)
 
+	Next(idx int) bool
+
 }
