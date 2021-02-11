@@ -59,15 +59,15 @@ type Prototype struct {
 	IsVararg        byte   // 是否是可变参数
 	MaxStackSize    byte   // 函数执行期间需要的寄存器个数
 
-	Codes      []uint32      // 指令表
+	Codes      []uint32     // 指令表
 	Constants []interface{} // 常量表
 	Upvalues  []Upvalue     // upvalue表
 	Protos    []*Prototype  // 子函数原型
 
 	// 调试信息
 	LineInfos     []uint32 // 行号表
-	LocVars      []LocVar // 局部变量表
-	UpvalueNames []string // upvalue名列表
+	LocVars      []LocVar  // 局部变量表
+	UpvalueNames []string  // upvalue名列表
 }
 
 type LocVar struct {
