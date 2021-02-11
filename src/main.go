@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch12/luac.out")
+	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch13/luac.out")
 	//proto := binchunk.Undump(data)
 	//luaMain(proto)
 	ls := state.New()
@@ -18,10 +18,26 @@ func main() {
 	ls.Register("next", next)
 	ls.Register("pairs", pairs)
 	ls.Register("ipairs", iPairs)
+	ls.Register("error", error)
+	ls.Register("pcall", pCall)
 	ls.Load(data, "luac.out", "b")
 	ls.Call(0, 0)
 }
 
+func error(ls LuaState) int {
+	// 错误对象已在栈顶
+	return ls.Error()
+}
+
+func pCall(ls LuaState) int {
+	nArgs := ls.GetTop() - 1
+	status := ls.PCall(nArgs, -1, 0)
+	// 此时栈顶是返回值, 或错误对象
+	// 再压入一个bool表示函数是否执行出错
+	ls.PushBoolean(status == LUA_OK)
+	ls.Insert(1)
+	return ls.GetTop()
+}
 
 func pairs(ls LuaState) int {
 	// 迭代器

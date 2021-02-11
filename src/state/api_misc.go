@@ -54,3 +54,9 @@ func (this *luaState) Next(idx int) bool {
 	}
 	panic("Next error, 指定索引处不是表")
 }
+
+// 从栈顶弹出一个值, 作为异常抛出
+func (this *luaState) Error() int {
+	err := this.stack.pop()
+	panic(err)
+}

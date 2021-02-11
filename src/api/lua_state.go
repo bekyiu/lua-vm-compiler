@@ -88,4 +88,7 @@ type LuaState interface {
 
 	Next(idx int) bool
 
+	Error() int
+	PCall(nArgs, nResult, msgh int) int
+
 }

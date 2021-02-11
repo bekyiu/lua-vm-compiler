@@ -20,7 +20,7 @@ func (this *luaState) Load(chunk []byte, chunkName, mode string) int {
 		c.upvals[0] = &upvalue{&env}
 	}
 	// 0表示加载成功
-	return 0
+	return LUA_OK
 }
 
 // 函数调用, nArgs指定被调函数参数的数量, nResults指定被调函数返回值的数量
@@ -93,8 +93,10 @@ func (this *luaState) callGoClosure(nArgs int, nResults int, c *closure) {
 	newStack := newLuaStack(nArgs+LUA_MINSTACK, this)
 	newStack.closure = c
 	// 给go闭包传递的参数
-	args := this.stack.popN(nArgs)
-	newStack.pushN(args, nArgs)
+	if nArgs > 0 {
+		args := this.stack.popN(nArgs)
+		newStack.pushN(args, nArgs)
+	}
 	// go闭包
 	this.stack.pop()
 
@@ -109,4 +111,24 @@ func (this *luaState) callGoClosure(nArgs int, nResults int, c *closure) {
 		this.stack.pushN(results, nResults)
 	}
 
+}
+
+// 与Call的功能一致, 不过PCall会捕获函数调用过程中产生的错误
+func (this *luaState) PCall(nArgs, nResult, msgh int) (status int) {
+	// 记录函数调用之前的栈帧
+	caller := this.stack
+	status = LUA_ERRRUN
+
+	defer func() {
+		if err := recover(); err != nil {
+			for this.stack != caller {
+				this.popLuaStack()
+			}
+			this.stack.push(err)
+		}
+	}()
+
+	this.Call(nArgs, nResult)
+	status = LUA_OK
+	return
 }
