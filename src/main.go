@@ -4,10 +4,50 @@ import (
 	"fmt"
 	"io/ioutil"
 	. "write_lua/src/api"
+	. "write_lua/src/compiler/lexer"
 	"write_lua/src/state"
 )
 
 func main() {
+	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch09/hello.lua")
+	testLexer(string(data), "hello.lua")
+}
+
+func testLexer(chunk, chunkName string) {
+	lexer := NewLexer(chunk, chunkName)
+	for {
+		line, kind, token := lexer.NextToken()
+		fmt.Printf("[%2d] [%-10s] %s\n",
+			line, kindToCategory(kind), token)
+		if kind == TOKEN_EOF {
+			break
+		}
+	}
+}
+
+func kindToCategory(kind int) string {
+	switch {
+	case kind < TOKEN_SEP_SEMI:
+		return "other"
+	case kind <= TOKEN_SEP_RCURLY:
+		return "separator"
+	case kind <= TOKEN_OP_NOT:
+		return "operator"
+	case kind <= TOKEN_KW_WHILE:
+		return "keyword"
+	case kind == TOKEN_IDENTIFIER:
+		return "identifier"
+	case kind == TOKEN_NUMBER:
+		return "number"
+	case kind == TOKEN_STRING:
+		return "string"
+	default:
+		return "other"
+	}
+}
+
+// ---------- vm 测试代码 ----------------
+func testVM() {
 	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch13/luac.out")
 	//proto := binchunk.Undump(data)
 	//luaMain(proto)

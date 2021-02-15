@@ -414,6 +414,24 @@ func (this *Lexer) NextToken() (line, kind int, token string) {
 	return
 }
 
+// 提取指定类型的token
+func (this *Lexer) NextTokenOfKind(kind int) (line int, token string) {
+	line, _kind, token := this.NextToken()
+	if kind != _kind {
+		this.error("syntax error near '%s'", token)
+	}
+	return line, token
+}
+
+// 提取标识符
+func (this *Lexer) NextIdentifier() (line int, token string) {
+	return this.NextTokenOfKind(TOKEN_IDENTIFIER)
+}
+// 返回当前行号
+func (this *Lexer) Line() int {
+	return this.line
+}
+
 func isWhiteSpace(c byte) bool {
 	switch c {
 	case '\t', '\n', '\v', '\f', '\r', ' ':
