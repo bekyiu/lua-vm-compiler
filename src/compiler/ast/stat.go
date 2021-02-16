@@ -47,7 +47,7 @@ type DoStat struct {
 
 // functioncall
 // 既可以是语句也可以是表达式
-// type FuncCallStat = FuncCallExp
+type FuncCallStat = FuncCallExp
 
 // ==== while和repeat用于实现同条件循环 ====
 // while exp do block end

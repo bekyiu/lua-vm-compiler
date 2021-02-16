@@ -70,3 +70,48 @@ type FuncDefExp struct {
 	IsVararg bool
 	Block    *Block
 }
+
+// ====== 表构造表达式 ========
+// tableconstructor ::= ‘{’ [fieldlist] ‘}’
+// fieldlist ::= field {fieldsep field} [fieldsep]
+// field ::= ‘[’ exp ‘]’ ‘=’ exp | Name ‘=’ exp | exp
+// fieldsep ::= ‘,’ | ‘;’
+type TableConstructorExp struct {
+	Line     int // line of `{` ?
+	LastLine int // line of `}`
+	KeyExps  []Exp
+	ValExps  []Exp
+}
+
+// ==== 圆括号表达式 =====
+// '('  exp  ')'
+type ParensExp struct {
+	Exp Exp
+}
+
+// ==== 表访问表达式 ====
+// prefixexp '[' exp ']'
+type TableAccessExp struct {
+	LastLine  int // line of `]`
+	PrefixExp Exp
+	KeyExp    Exp
+}
+
+// ===== 函数调用表达式 ======
+// functioncall ::= prefixexp [':' Name] args
+// args ::= '(' [explist] ')' | tableconstructor | LiteralString
+/*
+prefixexp ::= Name |
+              ‘(’ exp ‘)’ |
+              prefixexp ‘[’ exp ‘]’ |
+              prefixexp ‘.’ Name |
+              prefixexp ‘:’ Name args |
+              prefixexp args
+ */
+type FuncCallExp struct {
+	Line      int // line of `(` ?
+	LastLine  int // line of ')'
+	PrefixExp Exp
+	NameExp   *StringExp
+	Args      []Exp
+}
