@@ -135,3 +135,189 @@ func parseIfStat(lexer *Lexer) *IfStat {
 		Blocks: blocks,
 	}
 }
+
+// for Name ‘=’ exp ‘,’ exp [‘,’ exp] do block end
+// for namelist in explist do block end
+func parseForStat(lexer *Lexer) Stat {
+	lineOfFor, _ := lexer.NextTokenOfKind(TOKEN_KW_FOR)
+	_, name := lexer.NextIdentifier()
+	if lexer.LookAhead() == TOKEN_OP_ASSIGN {
+		// 数值for循环
+		return _finishForNumStat(lexer, lineOfFor, name)
+	} else {
+		return _finishForInStat(lexer, name)
+	}
+}
+
+// for namelist in explist do block end
+func _finishForInStat(lexer *Lexer, name0 string) *ForInStat {
+	nameList := _finishNameList(lexer, name0)         // namelist
+	lexer.NextTokenOfKind(TOKEN_KW_IN)                // in
+	expList := parseExpList(lexer)                    // explist
+	lineOfDo, _ := lexer.NextTokenOfKind(TOKEN_KW_DO) // do
+	block := parseBlock(lexer)                        // block
+	lexer.NextTokenOfKind(TOKEN_KW_END)               // end
+	return &ForInStat{
+		LineOfDo: lineOfDo,
+		NameList: nameList,
+		ExpList:  expList,
+		Block:    block,
+	}
+}
+
+// namelist ::= Name {',' Name}
+func _finishNameList(lexer *Lexer, name0 string) []string {
+	names := []string{name0}
+	for lexer.LookAhead() == TOKEN_SEP_COMMA {
+		lexer.NextToken()                 // ,
+		_, name := lexer.NextIdentifier() // name
+		names = append(names, name)
+	}
+	return names
+}
+
+// for Name ‘=’ exp ‘,’ exp [‘,’ exp] do block end
+func _finishForNumStat(lexer *Lexer, lineOfFor int, varName string) *ForNumStat {
+	lexer.NextTokenOfKind(TOKEN_OP_ASSIGN) // =
+	initExp := parseExp(lexer)             // exp
+	lexer.NextTokenOfKind(TOKEN_SEP_COMMA) // ,
+	limitExp := parseExp(lexer)            // exp
+
+	var stepExp Exp
+	if lexer.LookAhead() == TOKEN_SEP_COMMA {
+		lexer.NextToken()         // ,
+		stepExp = parseExp(lexer) // exp
+	} else {
+		// 步长缺省为1
+		stepExp = &IntegerExp{Line: lexer.Line(), Val: 1}
+	}
+	lineOfDo, _ := lexer.NextTokenOfKind(TOKEN_KW_DO) // do
+	block := parseBlock(lexer)                        // block
+	lexer.NextTokenOfKind(TOKEN_KW_END)               // end
+	return &ForNumStat{LineOfFor: lineOfFor, LineOfDo: lineOfDo,
+		VarName: varName, InitExp: initExp, LimitExp: limitExp, StepExp: stepExp, Block: block}
+}
+
+// local function Name funcbody
+// local namelist [‘=’ explist]
+func parseLocalAssignOrFuncDefStat(lexer *Lexer) Stat {
+	lexer.NextTokenOfKind(TOKEN_KW_LOCAL)
+	if lexer.LookAhead() == TOKEN_KW_FUNCTION {
+		return _finishLocalFuncDefStat(lexer)
+	} else {
+		return _finishLocalVarDeclStat(lexer)
+	}
+}
+
+// local function Name funcbody
+func _finishLocalFuncDefStat(lexer *Lexer) *LocalFuncDefStat {
+	lexer.NextTokenOfKind(TOKEN_KW_FUNCTION) // function
+	_, name := lexer.NextIdentifier()        // name
+	fdExp := parseFuncDefExp(lexer)          // funcbody
+	return &LocalFuncDefStat{Name: name, Exp: fdExp}
+}
+
+// local namelist [‘=’ explist]
+func _finishLocalVarDeclStat(lexer *Lexer) *LocalVarDeclStat {
+	_, name0 := lexer.NextIdentifier()        // Name
+	nameList := _finishNameList(lexer, name0) // { , Name }
+	var expList []Exp = nil
+	if lexer.LookAhead() == TOKEN_OP_ASSIGN {
+		lexer.NextToken()             // =
+		expList = parseExpList(lexer) // explist
+	}
+	lastLine := lexer.Line()
+	return &LocalVarDeclStat{LastLine: lastLine, NameList: nameList, ExpList: expList}
+}
+
+// varlist ‘=’ explist
+// functioncall
+func parseAssignOrFuncCallStat(lexer *Lexer) Stat {
+	prefixExp := parsePrefixExp(lexer)
+	if fc, ok := prefixExp.(*FuncCallExp); ok {
+		return fc
+	} else {
+		return parseAssignStat(lexer, prefixExp)
+	}
+}
+
+// varlist ‘=’ explist |
+func parseAssignStat(lexer *Lexer, var0 Exp) *AssignStat {
+	varList := _finishVarList(lexer, var0) // varlist
+	lexer.NextTokenOfKind(TOKEN_OP_ASSIGN) // =
+	expList := parseExpList(lexer)         // explist
+	lastLine := lexer.Line()
+	return &AssignStat{LastLine: lastLine, VarList: varList, ExpList: expList}
+}
+
+// varlist ::= var {‘,’ var}
+func _finishVarList(lexer *Lexer, var0 Exp) []Exp {
+	vars := []Exp{_checkVar(lexer, var0)} // var
+	for lexer.LookAhead() == TOKEN_SEP_COMMA {
+		lexer.NextToken()                          // ,
+		exp := parsePrefixExp(lexer)               // var
+		vars = append(vars, _checkVar(lexer, exp)) //
+	}
+	return vars
+}
+
+// 确保是var表达式, 否则报错
+// var ::=  Name | prefixexp ‘[’ exp ‘]’ | prefixexp ‘.’ Name
+func _checkVar(lexer *Lexer, exp Exp) Exp {
+	switch exp.(type) {
+	case *NameExp, *TableAccessExp:
+		return exp
+	}
+	lexer.NextTokenOfKind(-1) // trigger error
+	panic("unreachable!")
+}
+
+
+/*
+function t.a.b.c:f (params) body end -- 方法定义
+function t.a.b.c.f (self, params) body end -- 函数定义
+t.a.b.c.f = function (self, params) body end -- 赋值
+ */
+// function funcname funcbody
+// funcname ::= Name {‘.’ Name} [‘:’ Name]
+// funcbody ::= ‘(’ [parlist] ‘)’ block end
+// parlist ::= namelist [‘,’ ‘...’] | ‘...’
+// namelist ::= Name {‘,’ Name}
+func parseFuncDefStat(lexer *Lexer) *AssignStat {
+	lexer.NextTokenOfKind(TOKEN_KW_FUNCTION) // function
+	fnExp, hasColon := _parseFuncName(lexer) // funcname
+	fdExp := parseFuncDefExp(lexer)          // funcbody
+	if hasColon {                            // v:name(args) => v.name(self, args)
+		fdExp.ParList = append(fdExp.ParList, "")
+		copy(fdExp.ParList[1:], fdExp.ParList)
+		fdExp.ParList[0] = "self"
+	}
+	// 转换为赋值语句
+	return &AssignStat{
+		LastLine: fdExp.Line,
+		VarList:  []Exp{fnExp},
+		ExpList:  []Exp{fdExp},
+	}
+}
+
+// funcname ::= Name {‘.’ Name} [‘:’ Name]
+func _parseFuncName(lexer *Lexer) (exp Exp, hasColon bool) {
+	line, name := lexer.NextIdentifier() // name t
+	exp = &NameExp{Line: line, Name: name}
+	// t.k 等价于 t["k"]
+	for lexer.LookAhead() == TOKEN_SEP_DOT {
+		lexer.NextToken()                    // ,
+		line, name := lexer.NextIdentifier() // name k
+		idx := &StringExp{Line: line, Str: name}
+		exp = &TableAccessExp{LastLine: line, PrefixExp: exp, KeyExp: idx}
+	}
+	// a:b 等价于 a.b 等价于 a["b"]
+	if lexer.LookAhead() == TOKEN_SEP_COLON {
+		lexer.NextToken() // :
+		line, name := lexer.NextIdentifier()
+		idx := &StringExp{Line: line, Str: name}
+		exp = &TableAccessExp{LastLine: line, PrefixExp: exp, KeyExp: idx}
+		hasColon = true
+	}
+	return
+}
