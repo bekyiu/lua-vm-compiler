@@ -242,11 +242,117 @@ func parseExp0(lexer *Lexer) Exp {
 	case TOKEN_SEP_LCURLY: // tableconstructor
 		return parseTableConstructorExp(lexer)
 	case TOKEN_KW_FUNCTION: // functiondef
+		// 提前跳过 function关键字
 		lexer.NextToken()
 		return parseFuncDefExp(lexer)
 	default: // prefixexp
 		return parsePrefixExp(lexer)
 	}
+}
+
+// tableconstructor ::= ‘{’ [fieldlist] ‘}’
+func parseTableConstructorExp(lexer *Lexer) *TableConstructorExp {
+	line := lexer.Line()
+	lexer.NextTokenOfKind(TOKEN_SEP_LCURLY)    // {
+	keyExps, valExps := _parseFieldList(lexer) // fieldlist
+	lexer.NextTokenOfKind(TOKEN_SEP_RCURLY)    // }
+	lastLine := lexer.Line()
+	return &TableConstructorExp{line, lastLine, keyExps, valExps}
+}
+
+// fieldlist ::= field {fieldsep field} [fieldsep]
+func _parseFieldList(lexer *Lexer) (ks, vs []Exp) {
+	if lexer.LookAhead() != TOKEN_SEP_RCURLY {
+		k, v := _parseField(lexer) // field
+		ks = append(ks, k)
+		vs = append(vs, v)
+
+		for _isFieldSep(lexer.LookAhead()) {
+			lexer.NextToken() // sep
+			if lexer.LookAhead() != TOKEN_SEP_RCURLY {
+				k, v := _parseField(lexer) // field
+				ks = append(ks, k)
+				vs = append(vs, v)
+			} else {
+				break
+			}
+		}
+	}
+	return
+}
+
+// field ::= ‘[’ exp ‘]’ ‘=’ exp | Name ‘=’ exp | exp
+func _parseField(lexer *Lexer) (k, v Exp) {
+	if lexer.LookAhead() == TOKEN_SEP_LBRACK {
+		lexer.NextToken()                       // [
+		k = parseExp(lexer)                     // exp
+		lexer.NextTokenOfKind(TOKEN_SEP_RBRACK) // ]
+		lexer.NextTokenOfKind(TOKEN_OP_ASSIGN)  // =
+		v = parseExp(lexer)                     // exp
+		return
+	}
+
+	exp := parseExp(lexer)
+	if nameExp, ok := exp.(*NameExp); ok {
+		if lexer.LookAhead() == TOKEN_OP_ASSIGN {
+			// Name ‘=’ exp => ‘[’ LiteralString ‘]’ = exp
+			lexer.NextToken()
+			k = &StringExp{nameExp.Line, nameExp.Name}
+			v = parseExp(lexer)
+			return
+		}
+	}
+
+	return nil, exp
+}
+
+// fieldsep ::= ‘,’ | ‘;’
+func _isFieldSep(tokenKind int) bool {
+	return tokenKind == TOKEN_SEP_COMMA || tokenKind == TOKEN_SEP_SEMI
+}
+
+// functiondef ::= function funcbody
+// funcbody ::= ‘(’ [parlist] ‘)’ block end
+func parseFuncDefExp(lexer *Lexer) *FuncDefExp {
+	line := lexer.Line()
+	lexer.NextTokenOfKind(TOKEN_SEP_LPAREN)   // (
+	parList, isVararg := _parseParList(lexer) // parlist
+	lexer.NextTokenOfKind(TOKEN_SEP_RPAREN)   // )
+	block := parseBlock(lexer)
+	lastLine, _ := lexer.NextTokenOfKind(TOKEN_KW_END)
+	return &FuncDefExp{
+		Line:     line,
+		LastLine: lastLine,
+		ParList:  parList,
+		IsVararg: isVararg,
+		Block:    block,
+	}
+}
+
+// parlist ::= namelist [‘,’ ‘...’] | ‘...’
+// namelist ::= Name {‘,’ Name}
+func _parseParList(lexer *Lexer) (names []string, isVararg bool) {
+	switch lexer.LookAhead() {
+	case TOKEN_SEP_RPAREN:
+		return nil, false
+	case TOKEN_VARARG:
+		lexer.NextToken() // ...
+		return nil, true
+	}
+	_, name := lexer.NextIdentifier()
+	names = append(names, name)
+	for lexer.LookAhead() == TOKEN_SEP_COMMA {
+		lexer.NextToken() // ,
+		if lexer.LookAhead() == TOKEN_IDENTIFIER {
+			_, name := lexer.NextIdentifier()
+			names = append(names, name)
+		} else {
+			lexer.NextTokenOfKind(TOKEN_VARARG)
+			isVararg = true
+			break
+		}
+	}
+	return
 }
 
 func parseNumberExp(lexer *Lexer) Exp {
