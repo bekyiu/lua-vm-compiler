@@ -1,16 +1,28 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	. "write_lua/src/api"
 	. "write_lua/src/compiler/lexer"
+	"write_lua/src/compiler/parser"
 	"write_lua/src/state"
 )
 
 func main() {
 	data, _ := ioutil.ReadFile("/Users/bekyiu/dev/luaCode/ch09/hello.lua")
 	testLexer(string(data), "hello.lua")
+	testParser(string(data), "hello.lua")
+}
+
+func testParser(chunk, chunkName string) {
+	ast := parser.Parse(chunk, chunkName)
+	b, err := json.Marshal(ast)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(b))
 }
 
 func testLexer(chunk, chunkName string) {
